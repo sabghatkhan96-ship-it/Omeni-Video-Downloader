@@ -40,10 +40,12 @@ function getYouTubeVideoId(url: string): string | null {
     const u = new URL(url);
     if (u.hostname.includes('youtu.be')) return u.pathname.slice(1).split('?')[0];
     if (u.pathname.includes('/shorts/')) return u.pathname.split('/shorts/')[1].split('?')[0];
-    return u.searchParams.get('v');
-  } catch {
-    return null;
-  }
+    if (u.pathname.includes('/embed/')) return u.pathname.split('/embed/')[1].split('?')[0];
+    const v = u.searchParams.get('v');
+    if (v) return v;
+  } catch {}
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:shorts\/|watch\?v=|embed\/|v\/))([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
 }
 
 export const MediaResultCard: React.FC<MediaResultCardProps> = ({
@@ -329,20 +331,29 @@ export const MediaResultCard: React.FC<MediaResultCardProps> = ({
                       </span>
                     </div>
                     <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 flex items-center gap-1">
-                      <span>📥 Will start directly in Chrome download manager (top-right arrow 📥)</span>
+                      <span>{media.platform === 'youtube' ? '⚡ Official High-Speed Download Gateway' : '📥 Direct browser file download'}</span>
                     </p>
                   </div>
 
                   <a
-                    href={getDownloadUrl(bestFormat)}
-                    download={getDownloadFilename(bestFormat)}
-                    target="_self"
+                    href={media.platform === 'youtube' && ytVideoId ? `https://ssyoutube.com/watch?v=${ytVideoId}` : getDownloadUrl(bestFormat)}
+                    download={media.platform === 'youtube' ? undefined : getDownloadFilename(bestFormat)}
+                    target={media.platform === 'youtube' ? "_blank" : "_self"}
                     rel="noopener noreferrer"
-                    onClick={() => handleDownloadClick(bestFormat)}
+                    onClick={() => {
+                      if (media.platform === 'youtube') {
+                        onRecordDownload(bestFormat);
+                        confetti({ particleCount: 35, spread: 50, origin: { y: 0.8 } });
+                        onShowToast('Opening official video download gateway in new tab...', 'info');
+                      } else {
+                        handleDownloadClick(bestFormat);
+                      }
+                    }}
                     className="w-full sm:w-auto px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-extrabold rounded-xl shadow-md shadow-rose-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
                   >
                     <Download className="w-4 h-4 stroke-[2.5]" />
                     <span>Download Video ({bestFormat.quality})</span>
+                    {media.platform === 'youtube' && <ExternalLink className="w-3.5 h-3.5 opacity-80" />}
                   </a>
                 </div>
               )}
@@ -440,27 +451,45 @@ export const MediaResultCard: React.FC<MediaResultCardProps> = ({
                         </button>
 
                         {/* Primary Direct Download Link (Mobile & Desktop 100% Reliable Single File) */}
-                        <a
-                          href={directUrl}
-                          download={downloadFilename}
-                          target="_self"
-                          rel="noopener noreferrer"
-                          onClick={() => handleDownloadClick(format)}
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-lg shadow-sm transition-all cursor-pointer"
-                          title="Click to download directly in browser or mobile phone"
-                        >
-                          {isDownloading ? (
-                            <>
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              <span>Downloading...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Download className="w-3.5 h-3.5 stroke-[2.5]" />
-                              <span>Download</span>
-                            </>
-                          )}
-                        </a>
+                        {media.platform === 'youtube' && ytVideoId ? (
+                          <a
+                            href={`https://ssyoutube.com/watch?v=${ytVideoId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => {
+                              onRecordDownload(format);
+                              onShowToast('Opening official video download gateway in new tab...', 'info');
+                            }}
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-lg shadow-sm transition-all cursor-pointer"
+                            title="Open Official Download Gateway (SaveFrom 1080p/720p)"
+                          >
+                            <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                            <span>Download</span>
+                            <ExternalLink className="w-3 h-3 opacity-80" />
+                          </a>
+                        ) : (
+                          <a
+                            href={directUrl}
+                            download={downloadFilename}
+                            target="_self"
+                            rel="noopener noreferrer"
+                            onClick={() => handleDownloadClick(format)}
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-lg shadow-sm transition-all cursor-pointer"
+                            title="Click to download directly in browser or mobile phone"
+                          >
+                            {isDownloading ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <span>Downloading...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                                <span>Download</span>
+                              </>
+                            )}
+                          </a>
+                        )}
                       </div>
                     </div>
                   );
