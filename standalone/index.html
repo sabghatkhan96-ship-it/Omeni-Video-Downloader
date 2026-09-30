@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Media Video Downloader</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-xl bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
+        <h1 class="text-2xl font-bold text-center mb-2 text-indigo-400">📥 Video Downloader</h1>
+        <p class="text-slate-400 text-center text-sm mb-6">Paste link from TikTok, Facebook, Instagram, YouTube, or X (Twitter)</p>
+
+        <!-- Input Form -->
+        <div class="flex flex-col sm:flex-row gap-3">
+            <input type="url" id="videoUrl" placeholder="Paste video link here..." 
+                class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500">
+            <button onclick="fetchVideo()" id="fetchBtn"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-6 py-3 rounded-xl transition duration-200">
+                Fetch Video
+            </button>
+        </div>
+
+        <!-- Quick Platform Tags -->
+        <div class="flex items-center justify-center gap-2 mt-4 text-xs text-slate-400">
+            <span class="bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-700">TikTok No-WM</span>
+            <span class="bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-700">Facebook HD</span>
+            <span class="bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-700">YouTube 1080p</span>
+            <span class="bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-700">Instagram</span>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="hidden text-center mt-6">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
+            <p class="text-slate-400 text-sm mt-2">Fetching live video stream...</p>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMsg" class="hidden mt-6 bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-xl text-sm text-center"></div>
+
+        <!-- Result Box -->
+        <div id="resultBox" class="hidden mt-6 bg-slate-900 border border-slate-700 p-4 rounded-xl flex flex-col items-center gap-4">
+            <img id="videoThumb" src="" alt="Thumbnail" class="w-full h-56 object-cover rounded-lg border border-slate-700">
+            <h3 id="videoTitle" class="font-medium text-center text-sm line-clamp-2"></h3>
+            <div id="videoMeta" class="text-xs text-slate-400 text-center"></div>
+            
+            <a id="downloadBtn" href="#" target="_blank" download="video.mp4"
+                class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-center font-semibold py-3 rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Download Video (Direct File)
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Uses the current origin so it works whether deployed or run on localhost:5000
+        const BACKEND_URL = window.location.port === '5000' 
+            ? 'http://localhost:5000/api/download' 
+            : '/api/download';
+
+        async function fetchVideo() {
+            const urlInput = document.getElementById('videoUrl').value.trim();
+            const loading = document.getElementById('loading');
+            const errorMsg = document.getElementById('errorMsg');
+            const resultBox = document.getElementById('resultBox');
+            const fetchBtn = document.getElementById('fetchBtn');
+
+            if (!urlInput) {
+                errorMsg.innerText = "Please enter a valid URL!";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            // Reset UI
+            errorMsg.classList.add('hidden');
+            resultBox.classList.add('hidden');
+            loading.classList.remove('hidden');
+            fetchBtn.disabled = true;
+
+            try {
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: urlInput })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('videoThumb').src = data.thumbnail || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=640&q=80';
+                    document.getElementById('videoTitle').innerText = data.title;
+                    if (data.author) {
+                        document.getElementById('videoMeta').innerText = 'Creator: ' + data.author;
+                    }
+                    const downloadBtn = document.getElementById('downloadBtn');
+                    downloadBtn.href = data.downloadUrl || data.directCdnUrl;
+                    resultBox.classList.remove('hidden');
+                } else {
+                    errorMsg.innerText = data.message || "Failed to fetch video.";
+                    errorMsg.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorMsg.innerText = "Server error or connection failed!";
+                errorMsg.classList.remove('hidden');
+            } finally {
+                loading.classList.add('hidden');
+                fetchBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

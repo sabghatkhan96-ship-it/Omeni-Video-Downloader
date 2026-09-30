@@ -1,0 +1,6 @@
+{
+  "name": "OmniStream - Ultimate Social Media Video Downloader",
+  "description": "Lightning-fast, high-definition video downloader for YouTube, TikTok, Instagram, Facebook, Twitter/X, and more with 1080p, 4K, and MP3 audio extraction.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Suppress Vite HMR WebSocket closing errors in iframe/preview environments
+      window.addEventListener('unhandledrejection', function(e) {
+        var str = String(e && (e.reason && (e.reason.message || e.reason.stack || e.reason) || e));
+        if (str.indexOf('WebSocket') !== -1 || str.indexOf('vite') !== -1) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+      });
+      window.addEventListener('error', function(e) {
+        var str = String(e && (e.message || e.error || e));
+        if (str.indexOf('WebSocket') !== -1 || str.indexOf('vite') !== -1) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+      });
+    </script>
+    <title>OmniStream - Ultimate Social Media Video Downloader</title>
+    <meta name="description" content="Lightning-fast, high-definition video downloader for YouTube, TikTok, Instagram, Facebook, Twitter/X, and more with 1080p, 4K, and MP3 audio extraction." />
+    <meta property="og:title" content="OmniStream - Ultimate Social Media Video Downloader" />
+    <meta property="og:description" content="Lightning-fast, high-definition video downloader for YouTube, TikTok, Instagram, Facebook, Twitter/X, and more with 1080p, 4K, and MP3 audio extraction." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="OmniStream - Ultimate Social Media Video Downloader" />
+    <meta name="twitter:description" content="Lightning-fast, high-definition video downloader for YouTube, TikTok, Instagram, Facebook, Twitter/X, and more with 1080p, 4K, and MP3 audio extraction." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-neutral-950 text-neutral-100 antialiased selection:bg-rose-500 selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
