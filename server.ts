@@ -459,16 +459,28 @@ async function startServer() {
       }
     }
 
-    // C. Direct Remote HTTP stream fallback
-    if (rawTargetUrl.startsWith('http')) {
+    // C. Direct Remote HTTP stream fallback (ONLY for real binary video/audio streams, NEVER HTML!)
+    if (
+      (rawTargetUrl.startsWith('http://') || rawTargetUrl.startsWith('https://')) &&
+      !rawTargetUrl.includes('youtube.com') &&
+      !rawTargetUrl.includes('youtu.be')
+    ) {
       try {
         const upstreamRes = await fetch(rawTargetUrl, {
           headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
           signal: AbortSignal.timeout(10000)
         });
-        if (upstreamRes.ok && upstreamRes.body) {
+        const upstreamContentType = upstreamRes.headers.get('content-type') || '';
+        // NEVER stream HTML, plain text, or JSON error pages as a video file
+        if (
+          upstreamRes.ok &&
+          upstreamRes.body &&
+          !upstreamContentType.includes('text/html') &&
+          !upstreamContentType.includes('text/plain') &&
+          !upstreamContentType.includes('application/json')
+        ) {
           res.setHeader('Content-Disposition', `attachment; filename="${finalFilename}"`);
-          res.setHeader('Content-Type', contentType);
+          res.setHeader('Content-Type', upstreamContentType || contentType);
           const cl = upstreamRes.headers.get('content-length');
           if (cl) res.setHeader('Content-Length', cl);
 

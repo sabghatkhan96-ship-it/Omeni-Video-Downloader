@@ -108,6 +108,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         upstream.headers.get('content-type') ||
         (format === 'mp3' ? 'audio/mpeg' : 'video/mp4');
 
+      // CRITICAL: NEVER stream HTML or plain text as video/audio file!
+      if (
+        contentType.includes('text/html') ||
+        contentType.includes('text/plain') ||
+        contentType.includes('application/json')
+      ) {
+        return res.redirect(302, targetUrl);
+      }
+
       // Set standard headers for Chrome/Edge/Firefox to trigger the top-right download tray
       res.setHeader(
         'Content-Disposition',
