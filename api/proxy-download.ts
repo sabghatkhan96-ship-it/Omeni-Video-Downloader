@@ -47,6 +47,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.redirect(302, `${backendUrl.replace(/\/$/, '')}/api/stream-media?url=${encodeURIComponent(targetUrl)}&filename=${encodeURIComponent(cleanFilename)}&format=${encodeURIComponent(format)}`);
   }
 
+  // If this is YouTube, redirect directly to official video gateway (bypasses bot detection)
+  if (targetUrl.includes('youtube.com') || targetUrl.includes('youtu.be')) {
+    let ytId = '';
+    try {
+      const u = new URL(targetUrl);
+      if (u.hostname.includes('youtu.be')) ytId = u.pathname.slice(1).split('?')[0];
+      else if (u.pathname.includes('/shorts/')) ytId = u.pathname.split('/shorts/')[1]?.split('?')[0];
+      else ytId = u.searchParams.get('v') || '';
+    } catch {}
+    if (!ytId) {
+      const match = targetUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:shorts\/|watch\?v=|embed\/|v\/))([a-zA-Z0-9_-]{11})/);
+      if (match) ytId = match[1];
+    }
+    if (ytId) {
+      return res.redirect(302, `https://ssyoutube.com/watch?v=${ytId}`);
+    }
+  }
+
   // If this is a direct external CDN stream (e.g. Facebook fbcdn, TikTok TikWM, RapidCDN, AWS)
   if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
     // If the target URL already has download flags (e.g. rapidcdn with dl=1)

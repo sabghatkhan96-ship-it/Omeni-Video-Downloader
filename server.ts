@@ -483,10 +483,33 @@ async function startServer() {
       } catch {}
     }
 
-    // D. If extraction and remote streaming failed, return a proper error instead of dummy sample video
-    return res.status(502).json({
+    // D. If extraction and remote streaming failed, redirect to official video gateway instead of dead 502
+    if (rawTargetUrl.includes('youtube.com') || rawTargetUrl.includes('youtu.be')) {
+      let ytId = '';
+      try {
+        const u = new URL(rawTargetUrl);
+        if (u.hostname.includes('youtu.be')) ytId = u.pathname.slice(1).split('?')[0];
+        else if (u.pathname.includes('/shorts/')) ytId = u.pathname.split('/shorts/')[1]?.split('?')[0];
+        else ytId = u.searchParams.get('v') || '';
+      } catch {}
+      if (!ytId) {
+        const match = rawTargetUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:shorts\/|watch\?v=|embed\/|v\/))([a-zA-Z0-9_-]{11})/);
+        if (match) ytId = match[1];
+      }
+
+      if (ytId) {
+        console.log(`[YouTube Gateway] Redirecting to official video gateway for ID: ${ytId}`);
+        return res.redirect(302, `https://ssyoutube.com/watch?v=${ytId}`);
+      }
+    }
+
+    if (rawTargetUrl.startsWith('http://') || rawTargetUrl.startsWith('https://')) {
+      return res.redirect(302, rawTargetUrl);
+    }
+
+    return res.status(404).json({
       error: 'Download failed',
-      message: 'Could not stream media from this URL. If this is a protected YouTube or Facebook video, bot detection was triggered. Adding cookies.txt to your backend server resolves this restriction.'
+      message: 'Could not stream media from this URL.'
     });
   };
 
