@@ -123,9 +123,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // If relative URL (sample / fallback)
-  if (targetUrl.includes('video_') || targetUrl.includes('landscape') || targetUrl.includes('vertical')) {
-    return res.redirect(302, '/media/sample_1080p.mp4');
+  if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
+    return res.redirect(302, targetUrl);
   }
-  return res.redirect(302, targetUrl || '/media/sample_1080p.mp4');
+
+  return res.status(400).json({ error: 'Invalid or missing media stream URL' });
 }

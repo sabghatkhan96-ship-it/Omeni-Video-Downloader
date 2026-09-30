@@ -345,7 +345,7 @@ async function extractTikTok(url: string, mediaId: string): Promise<ExtractedMed
         views: d.play_count ? `${(d.play_count / 1000).toFixed(1)}K views` : '1.8M views',
         likes: d.digg_count ? `${(d.digg_count / 1000).toFixed(1)}K likes` : '142K likes',
         uploadDate: 'Verified TikTok Stream',
-        samplePlayableUrl: d.play || '/media/video_1080p_vertical.mp4',
+        samplePlayableUrl: d.play || d.wmplay || '',
         codecInfo: {
           videoCodec: 'H.264 / AVC (High Profile)',
           audioCodec: 'AAC-LC (Stereo, 44.1kHz)',
@@ -450,7 +450,7 @@ async function extractFacebook(
       views: meta.view_count ? `${(meta.view_count / 1000).toFixed(0)}K views` : '1.2M views',
       likes: 'Active',
       uploadDate: 'Verified Facebook Stream',
-      samplePlayableUrl: isShort ? '/media/video_1080p_vertical.mp4' : '/media/video_1080p_landscape.mp4',
+      samplePlayableUrl: formats.find((f) => f.type === 'video')?.url || '',
       codecInfo: {
         videoCodec: 'H.264 / AVC (High@L4.1)',
         audioCodec: 'AAC-LC (Stereo, 44.1kHz)',
@@ -483,7 +483,12 @@ async function extractYouTube(
       videoId = u.searchParams.get('v') || '';
     }
   } catch {
-    videoId = 'dQw4w9WgXcQ';
+    videoId = '';
+  }
+
+  if (!videoId) {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:shorts\/|watch\?v=|embed\/|v\/))([a-zA-Z0-9_-]{11})/);
+    if (match) videoId = match[1];
   }
 
   let title = isShort ? 'YouTube Shorts Video' : 'YouTube Video';
@@ -640,7 +645,7 @@ async function extractTwitter(url: string, mediaId: string): Promise<ExtractedMe
   }
 
   const durationSec = 45;
-  const playableUrl = '/media/video_1080p_landscape.mp4';
+  const playableUrl = `/api/stream-media?type=ytdlp&format=best&url=${encodeURIComponent(url)}`;
 
   return {
     id: mediaId,
@@ -693,7 +698,7 @@ async function extractReddit(url: string, mediaId: string): Promise<ExtractedMed
   }
 
   const durationSec = 52;
-  const playableUrl = '/media/video_1080p_landscape.mp4';
+  const playableUrl = `/api/stream-media?type=ytdlp&format=best&url=${encodeURIComponent(url)}`;
 
   return {
     id: mediaId,
@@ -739,7 +744,7 @@ async function extractVimeo(url: string, mediaId: string): Promise<ExtractedMedi
     // fallback
   }
 
-  const playableUrl = '/media/video_1080p_landscape.mp4';
+  const playableUrl = `/api/stream-media?type=ytdlp&format=best&url=${encodeURIComponent(url)}`;
 
   return {
     id: mediaId,
@@ -815,7 +820,7 @@ async function extractGeneric(
   }
 
   const durationSec = isShortOrReel ? 24 : 110;
-  const playableUrl = isShortOrReel ? '/media/video_1080p_vertical.mp4' : '/media/video_1080p_landscape.mp4';
+  const playableUrl = `/api/stream-media?type=ytdlp&format=best&url=${encodeURIComponent(url)}`;
 
   return {
     id: mediaId,

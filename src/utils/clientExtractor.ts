@@ -19,10 +19,10 @@ export function sanitizeVideoUrl(input: string): string {
 // Generate formats for extracted media
 export function getStandardFormats(mediaId: string, isShort = false, rawUrl = ''): MediaFormat[] {
   const enc = encodeURIComponent(rawUrl || '');
-  const url1080 = rawUrl ? `/api/stream-media?type=ytdlp&format=best&url=${enc}` : '/media/sample_1080p.mp4';
-  const url720 = rawUrl ? `/api/stream-media?type=ytdlp&format=720&url=${enc}` : '/media/sample_1080p.mp4';
-  const url480 = rawUrl ? `/api/stream-media?type=ytdlp&format=480&url=${enc}` : '/media/sample_1080p.mp4';
-  const urlAudio = rawUrl ? `/api/stream-media?type=ytdlp&format=audio&url=${enc}` : '/media/audio_320k.mp3';
+  const url1080 = `/api/stream-media?type=ytdlp&format=best&url=${enc}`;
+  const url720 = `/api/stream-media?type=ytdlp&format=720&url=${enc}`;
+  const url480 = `/api/stream-media?type=ytdlp&format=480&url=${enc}`;
+  const urlAudio = `/api/stream-media?type=ytdlp&format=audio&url=${enc}`;
 
   return [
     {
@@ -181,12 +181,19 @@ export async function extractClientSide(rawUrl: string): Promise<ExtractedMedia>
         videoId = u.searchParams.get('v') || '';
       }
     } catch {
-      videoId = 'dQw4w9WgXcQ';
+      videoId = '';
     }
 
-    if (videoId) {
-      thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+    if (!videoId) {
+      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:shorts\/|watch\?v=|embed\/|v\/))([a-zA-Z0-9_-]{11})/);
+      if (match) videoId = match[1];
     }
+
+    if (!videoId) {
+      throw new Error('Could not find YouTube video ID. Please check the video link.');
+    }
+
+    thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 
     try {
       const oembedRes = await fetch(
@@ -213,6 +220,70 @@ export async function extractClientSide(rawUrl: string): Promise<ExtractedMedia>
         const musicUrl = d.music ? (d.music.startsWith('http') ? d.music : `https://www.tikwm.com${d.music}`) : (playUrl || '');
         const durationSec = d.duration || 15;
 
+        const formats: MediaFormat[] = [
+          {
+            id: `${mediaId}-nowatermark`,
+            type: 'video',
+            format: 'mp4',
+            quality: 'HD (No Watermark)',
+            resolution: '1080x1920',
+            fps: 60,
+            hasAudio: true,
+            hasVideo: true,
+            filesizeApprox: d.size ? `${(d.size / (1024 * 1024)).toFixed(1)} MB` : 'HD Stream',
+            filesizeBytes: d.size || 14000000,
+            url: playUrl || wmplayUrl,
+            note: 'Direct TikTok stream without watermark'
+          }
+        ];
+
+        if (wmplayUrl) {
+          formats.push({
+            id: `${mediaId}-wm`,
+            type: 'video',
+            format: 'mp4',
+            quality: 'HD (With Watermark)',
+            resolution: '1080x1920',
+            fps: 60,
+            hasAudio: true,
+            hasVideo: true,
+            filesizeApprox: d.wm_size ? `${(d.wm_size / (1024 * 1024)).toFixed(1)} MB` : 'HD Stream',
+            filesizeBytes: d.wm_size || 15000000,
+            url: wmplayUrl,
+            note: 'Official video with watermark'
+          });
+        }
+
+        if (musicUrl) {
+          formats.push({
+            id: `${mediaId}-mp3`,
+            type: 'audio',
+            format: 'mp3',
+            quality: '320 kbps (Original Audio)',
+            hasAudio: true,
+            hasVideo: false,
+            filesizeApprox: '3.5 MB',
+            filesizeBytes: 3670016,
+            url: musicUrl,
+            note: 'Extracted audio track'
+          });
+        }
+
+        if (d.cover || d.origin_cover) {
+          formats.push({
+            id: `${mediaId}-poster`,
+            type: 'thumbnail',
+            format: 'jpg',
+            quality: 'HD Poster Artwork',
+            hasAudio: false,
+            hasVideo: false,
+            filesizeApprox: '450 KB',
+            filesizeBytes: 460800,
+            url: d.cover || d.origin_cover,
+            note: 'High-res thumbnail'
+          });
+        }
+
         return {
           id: mediaId,
           originalUrl: url,
@@ -224,8 +295,8 @@ export async function extractClientSide(rawUrl: string): Promise<ExtractedMedia>
           thumbnail: d.cover || d.origin_cover || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=640&q=80',
           durationSeconds: durationSec,
           durationFormatted: `${Math.floor(durationSec / 60)}:${(durationSec % 60).toString().padStart(2, '0')}`,
-          views: d.play_count ? `${(d.play_count / 1000).toFixed(1)}K views` : '1.4M views',
-          likes: d.digg_count ? `${(d.digg_count / 1000).toFixed(1)}K likes` : '120K likes',
+          views: d.play_count ? `${(d.play_count / 1000).toFixed(1)}K views` : 'Active Views',
+          likes: d.digg_count ? `${(d.digg_count / 1000).toFixed(1)}K likes` : 'Active Likes',
           uploadDate: 'Verified Stream',
           samplePlayableUrl: playUrl || wmplayUrl,
           codecInfo: {
@@ -234,65 +305,13 @@ export async function extractClientSide(rawUrl: string): Promise<ExtractedMedia>
             container: 'MP4',
             isCompatibleEverywhere: true
           },
-          formats: [
-            {
-              id: `${mediaId}-nowatermark`,
-              type: 'video',
-              format: 'mp4',
-              quality: 'HD (No Watermark)',
-              resolution: '1080x1920',
-              fps: 60,
-              hasAudio: true,
-              hasVideo: true,
-              filesizeApprox: d.size ? `${(d.size / (1024 * 1024)).toFixed(1)} MB` : '14.2 MB',
-              filesizeBytes: d.size || 14000000,
-              url: playUrl || wmplayUrl,
-              note: 'Direct TikTok stream without watermark'
-            },
-            {
-              id: `${mediaId}-wm`,
-              type: 'video',
-              format: 'mp4',
-              quality: 'HD (With Watermark)',
-              resolution: '1080x1920',
-              fps: 60,
-              hasAudio: true,
-              hasVideo: true,
-              filesizeApprox: d.wm_size ? `${(d.wm_size / (1024 * 1024)).toFixed(1)} MB` : '15.5 MB',
-              filesizeBytes: d.wm_size || 15000000,
-              url: wmplayUrl || playUrl,
-              note: 'Official video with watermark'
-            },
-            {
-              id: `${mediaId}-mp3`,
-              type: 'audio',
-              format: 'mp3',
-              quality: '320 kbps (Original Audio)',
-              hasAudio: true,
-              hasVideo: false,
-              filesizeApprox: '3.5 MB',
-              filesizeBytes: 3670016,
-              url: musicUrl,
-              note: 'Extracted audio track'
-            },
-            {
-              id: `${mediaId}-poster`,
-              type: 'thumbnail',
-              format: 'jpg',
-              quality: 'HD Poster Artwork',
-              hasAudio: false,
-              hasVideo: false,
-              filesizeApprox: '450 KB',
-              filesizeBytes: 460800,
-              url: d.cover || d.origin_cover || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=640&q=80',
-              note: 'High-res thumbnail'
-            }
-          ]
+          formats
         };
+      } else {
+        throw new Error(tik.msg || 'Could not parse TikTok video.');
       }
-    } catch {
-      title = 'Trending TikTok Video (HD No Watermark)';
-      author = '@tiktok_user';
+    } catch (tikErr: any) {
+      throw new Error(tikErr?.message || 'Could not extract TikTok video. Please ensure the link is a valid, public video.');
     }
   } else if (platform === 'facebook') {
     try {

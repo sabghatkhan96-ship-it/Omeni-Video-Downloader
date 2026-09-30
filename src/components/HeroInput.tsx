@@ -24,34 +24,6 @@ interface HeroInputProps {
   onClear: () => void;
 }
 
-const SAMPLE_LINKS = [
-  {
-    name: 'YouTube Short',
-    url: 'https://www.youtube.com/shorts/aqz-KE-bpKQ',
-    platform: 'youtube'
-  },
-  {
-    name: 'TikTok Viral',
-    url: 'https://www.tiktok.com/@creator/video/72583920194821',
-    platform: 'tiktok'
-  },
-  {
-    name: 'Instagram Reel',
-    url: 'https://www.instagram.com/reel/C8XYZ123abc',
-    platform: 'instagram'
-  },
-  {
-    name: 'Twitter / X',
-    url: 'https://x.com/tech_insider/status/1782390192831',
-    platform: 'twitter'
-  },
-  {
-    name: 'Facebook Video',
-    url: 'https://www.facebook.com/watch/?v=98127391823',
-    platform: 'facebook'
-  }
-];
-
 export const HeroInput: React.FC<HeroInputProps> = ({
   url,
   setUrl,
@@ -210,30 +182,11 @@ export const HeroInput: React.FC<HeroInputProps> = ({
               <div>
                 <p className="font-semibold">{errorMessage}</p>
                 <p className="text-xs opacity-90 mt-0.5">
-                  Check if the account or video is private, or test one of the sample links below.
+                  Make sure the link is copied directly from the browser or app and the video is public.
                 </p>
               </div>
             </div>
           )}
-
-          {/* Quick-test sample pills */}
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-            <span className="font-medium text-neutral-400 dark:text-neutral-500">Quick Test:</span>
-            {SAMPLE_LINKS.map((sample) => (
-              <button
-                key={sample.name}
-                type="button"
-                onClick={() => {
-                  setUrl(sample.url);
-                  onExtract(sample.url);
-                }}
-                disabled={isLoading}
-                className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-850 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium transition-colors border border-neutral-200/60 dark:border-neutral-800"
-              >
-                {sample.name}
-              </button>
-            ))}
-          </div>
         </form>
       </div>
     </section>

@@ -87,8 +87,7 @@ export const MediaResultCard: React.FC<MediaResultCardProps> = ({
       return `/api/proxy-download?url=${encodeURIComponent(format.url)}&filename=${encodeURIComponent(filename)}&format=${format.format}&quality=${encodeURIComponent(format.quality)}`;
     }
 
-    // If local/bundled file (e.g. /media/sample_1080p.mp4), return directly
-    return format.url || '/media/sample_1080p.mp4';
+    return format.url;
   };
 
   const getDownloadFilename = (format: MediaFormat) => {

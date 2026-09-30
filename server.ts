@@ -247,21 +247,20 @@ async function startServer() {
     }
   });
 
-  // Shared Helper: Stream local media fallback
+  // Shared Helper: Stream local media
   const streamLocalFile = (res: Response, localFileName: string, finalFilename: string, contentType: string) => {
     const filePath = path.join(MEDIA_DIR, localFileName);
-    const fallbackPath = fs.existsSync(filePath) ? filePath : path.join(MEDIA_DIR, 'video_1080p_landscape.mp4');
     
-    if (!fs.existsSync(fallbackPath)) {
+    if (!fs.existsSync(filePath)) {
       return res.status(404).send('Media file not found');
     }
 
-    const stat = fs.statSync(fallbackPath);
+    const stat = fs.statSync(filePath);
     res.setHeader('Content-Disposition', `attachment; filename="${finalFilename}"`);
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Length', stat.size);
     res.setHeader('Accept-Ranges', 'bytes');
-    fs.createReadStream(fallbackPath).pipe(res);
+    fs.createReadStream(filePath).pipe(res);
   };
 
   // 4. API: Live Stream & Download Router (TikTok, Facebook, YouTube, Twitter, Reddit)
